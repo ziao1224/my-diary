@@ -145,7 +145,7 @@ export default function App() {
             {/* 头部欢迎语 */}
             <header className="mb-16 text-center">
               <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
-                 <img src="public/p2494705863.jpg" alt="Me" className="w-full h-full object-cover" />
+                 <img src="p2494705863.jpg" alt="Me" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-2xl font-bold mb-2">My Recordings</h1>
               <p className={`text-sm italic ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>"记录"</p>
