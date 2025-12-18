@@ -16,82 +16,67 @@ import {
   Frown,
   Heart,
   Coffee,
-  MapPin
+  MapPin,
+  // 新增引入的图标
+  Flame,
+  Ghost,
+  Star,
+  Snowflake,
+  Wind,
+  CloudLightning,
+  CloudFog,
+  Leaf
 } from 'lucide-react';
 
 // 模拟日记数据
 const INITIAL_ENTRIES = [
   {
     id: 1,
-    title: "雨天，和一只猫的偶遇",
+    title: "今天是这个网站的诞生日",
     content: `
-      <p>今天这座城市下了一整天的雨。原本心情有些低落，但在路过街角咖啡店时，遇到了一只躲雨的橘猫。</p>
-      <p>它并不怕人，反而在这个潮湿的下午蹭了蹭我的裤脚。那一瞬间，即使没有带伞，心里也觉得暖烘烘的。</p>
-      <p>有时候治愈我们的，往往不是什么大道理，而是这些微不足道的小生命。</p>
+      <p>本来是打算去租一个云服务器，然后部署在服务器上，甚至已经买了域名</p>
+      <p>但是我想可能先用Github pages试试手吧</p>
+      <p>做这些是为了？</p>
+      <p>买的域名不是我的名字，是一个很特别的人</p>
+      <p>wish</p>
     `,
-    date: "2024-05-15",
-    year: "2024",
-    month: "05",
-    day: "15",
-    weekday: "周三",
-    mood: "happy",
-    weather: "rain",
-    location: "上海 · 老城区",
-    images: ["https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=1000"]
-  },
-  {
-    id: 2,
-    title: "关于成长的迷茫",
-    content: `
-      <p>凌晨两点，还是睡不着。</p>
-      <p>最近总是会陷入一种莫名的焦虑中。看着身边的人都在飞速奔跑，而自己似乎还在原地踏步。这种落差感让人窒息。</p>
-      <p>写下这段文字的时候，窗外只有路灯是亮着的。也许成长就是要在这种孤独中学会与自己和解吧。</p>
-    `,
-    date: "2024-05-12",
-    year: "2024",
-    month: "05",
-    day: "12",
-    weekday: "周日",
-    mood: "sad",
+    date: "2025-12-18",
+    year: "2025",
+    month: "12",
+    day: "18",
+    weekday: "周四",
+    mood: "calm",
     weather: "cloudy",
-    location: "家",
+    location: "重庆 · 南岸区",
     images: []
   },
-  {
-    id: 3,
-    title: "尝试了新的食谱",
-    content: `
-      <p>终于做出了完美的番茄罗勒意面！秘诀竟然是最后加的那一点点煮面水，让酱汁完全乳化了。</p>
-      <p>生活中的快乐有时候很简单，比如一道好吃的晚餐，比如厨房里弥漫的热气。</p>
-    `,
-    date: "2024-05-10",
-    year: "2024",
-    month: "05",
-    day: "10",
-    weekday: "周五",
-    mood: "excited",
-    weather: "sunny",
-    location: "我的小厨房",
-    images: ["https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&q=80&w=1000"]
-  }
 ];
 
 // 心情图标映射
 const MoodIcon = ({ mood, className }) => {
   switch(mood) {
-    case 'happy': return <Smile className={`text-amber-500 ${className}`} />;
-    case 'sad': return <Frown className={`text-blue-500 ${className}`} />;
-    case 'excited': return <Heart className={`text-rose-500 ${className}`} />;
-    default: return <Meh className={`text-gray-500 ${className}`} />;
+    case 'happy': return <Smile className={`text-amber-500 ${className}`} />; // 开心
+    case 'sad': return <Frown className={`text-blue-500 ${className}`} />;   // 难过
+    case 'excited': return <Heart className={`text-rose-500 ${className}`} />; // 兴奋/喜爱
+    case 'angry': return <Flame className={`text-red-500 ${className}`} />;    // 生气
+    case 'tired': return <Coffee className={`text-stone-500 ${className}`} />; // 疲惫
+    case 'scared': return <Ghost className={`text-purple-500 ${className}`} />; // 害怕
+    case 'cool': return <Star className={`text-yellow-400 ${className}`} />;   // 酷/棒
+    case 'calm': return <Leaf className={`text-green-500 ${className}`} />;    // 平静 <--- 新增
+    default: return <Meh className={`text-gray-500 ${className}`} />;          // 平淡
   }
 };
 
 // 天气图标映射
 const WeatherIcon = ({ weather, className }) => {
   switch(weather) {
-    case 'sunny': return <Sun className={`text-orange-400 ${className}`} />;
-    case 'rain': return <CloudRain className={`text-slate-400 ${className}`} />;
-    case 'cloudy': return <Cloud className={`text-slate-400 ${className}`} />;
+    case 'sunny': return <Sun className={`text-orange-400 ${className}`} />;           // 晴天
+    case 'rain': return <CloudRain className={`text-blue-400 ${className}`} />;        // 雨天
+    case 'cloudy': return <Cloud className={`text-slate-400 ${className}`} />;         // 多云
+    case 'snow': return <Snowflake className={`text-cyan-400 ${className}`} />;        // 雪天
+    case 'windy': return <Wind className={`text-slate-500 ${className}`} />;           // 大风
+    case 'thunder': return <CloudLightning className={`text-yellow-500 ${className}`} />; // 雷雨
+    case 'fog': return <CloudFog className={`text-slate-400 ${className}`} />;         // 雾天
     default: return <Sun className={`text-orange-400 ${className}`} />;
   }
 };
@@ -131,7 +116,7 @@ export default function App() {
             <div className={`p-2 rounded-lg transition-transform group-hover:rotate-12 ${darkMode ? 'bg-rose-900/30 text-rose-400' : 'bg-rose-100 text-rose-500'}`}>
               <Book className="h-5 w-5" />
             </div>
-            <span className="text-lg font-medium tracking-wide">Memory<span className={`font-bold ${darkMode ? 'text-rose-400' : 'text-rose-500'}`}>Lane</span></span>
+            <span className="text-lg font-medium tracking-wide">record<span className={`font-bold ${darkMode ? 'text-rose-400' : 'text-rose-500'}`}>this</span></span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -160,10 +145,10 @@ export default function App() {
             {/* 头部欢迎语 */}
             <header className="mb-16 text-center">
               <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
-                 <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200" alt="Me" className="w-full h-full object-cover" />
+                 <img src="public/p2494705863.jpg" alt="Me" className="w-full h-full object-cover" />
               </div>
-              <h1 className="text-2xl font-bold mb-2">My Digital Garden</h1>
-              <p className={`text-sm italic ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>"记录是为了更好地遗忘，或者更深刻地铭记。"</p>
+              <h1 className="text-2xl font-bold mb-2">My Recordings</h1>
+              <p className={`text-sm italic ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>"记录"</p>
             </header>
 
             {/* 时间轴列表 */}
@@ -290,7 +275,8 @@ export default function App() {
 
       {/* 底部简易 Footer */}
       <footer className={`py-6 text-center text-xs tracking-wider opacity-40 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-        <p>WRITTEN WITH ♥ IN 2024</p>
+        <p>WRITTEN WITH ♥ IN 2025</p>
+        <p>Begin 2025年9月22日</p>
       </footer>
     </div>
   );
