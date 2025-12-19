@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/my-diary/',
+  // 关键修改：Vercel 部署必须用根路径 '/'，不能用之前的 '/my-diary/'
+  base: '/',
 })
