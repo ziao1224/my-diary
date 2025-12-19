@@ -144,6 +144,7 @@ export default function App() {
           month: String(dateObj.getMonth() + 1).padStart(2, '0'),
           day: String(dateObj.getDate()).padStart(2, '0'),
           weekday: dateObj.toLocaleDateString('zh-CN', { weekday: 'short' }), // "周一"
+          time: dateObj.toLocaleTimeString('zh-CN', { hour12: false }), // "14:30:05" (新增精准时间)
           images: item.images || [] 
         };
       });
@@ -417,15 +418,19 @@ export default function App() {
                       <div className={`text-sm font-medium uppercase tracking-widest ${darkMode ? 'text-rose-400' : 'text-rose-500'}`}>
                         {entry.month} / {entry.day} <span className="opacity-50 ml-1">{entry.weekday}</span>
                       </div>
+                      <div className={`text-xs font-mono mt-1 opacity-60 ${darkMode ? 'text-rose-300' : 'text-rose-400'}`}>{entry.time}</div>
                     </div>
   
                     {/* Entry Card */}
                     <div onClick={() => { setActiveEntry(entry); setView('entry'); window.scrollTo(0,0); }} className={`w-full md:w-[45%] cursor-pointer transition-transform duration-300 hover:-translate-y-1`}>
                       <article className={`p-6 rounded-2xl shadow-sm border relative overflow-hidden ${darkMode ? 'bg-[#25262b] border-slate-800 hover:border-slate-700' : 'bg-white border-white hover:shadow-md'}`}>
                         {/* Mobile Date */}
-                        <div className="md:hidden flex items-baseline gap-2 mb-3 text-rose-500">
-                          <span className="text-xl font-bold">{entry.day}</span>
-                          <span className="text-xs uppercase">{entry.month}. {entry.year}</span>
+                        <div className="md:hidden mb-3 text-rose-500">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold">{entry.day}</span>
+                            <span className="text-xs uppercase">{entry.month}. {entry.year}</span>
+                          </div>
+                          <div className="text-xs opacity-60 font-mono">{entry.time} {entry.weekday}</div>
                         </div>
                         {/* Images */}
                         {entry.images && entry.images.length > 0 && (
@@ -459,6 +464,7 @@ export default function App() {
                         <div className="flex flex-col items-center">
                            <span className="text-xs uppercase opacity-50">Date</span>
                            <span className="font-bold font-sans">{activeEntry.year}.{activeEntry.month}.{activeEntry.day}</span>
+                           <span className="text-[10px] opacity-60 font-mono">{activeEntry.time}</span>
                         </div>
                         <div className={`w-px h-8 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}></div>
                         <div className="flex flex-col items-center">
