@@ -89,6 +89,14 @@ export default function App() {
         .from('entries')
         .select('*')
         .order('created_at', { ascending: false });
+      // 🔍🔍🔍 这里是新增的调试代码
+      console.log("🛠️ Supabase 原始数据 (data):", data);
+      console.log("🛠️ Supabase 错误信息 (error):", error);
+      
+      if (data && data.length === 0) {
+        console.warn("⚠️ 注意：Supabase 返回了一个空数组。请检查：1. 数据库里是否有数据？ 2. RLS (Row Level Security) 策略是否允许公开读取？");
+      }
+      // 🔍🔍🔍 调试代码结束
 
       if (error) throw error;
 
