@@ -49,12 +49,12 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 // --------------------------------------------------
 
 const PROFILE = {
-  name: "My Recordings",
+  name: "有一些瞬间，有一些想法在脑子里回旋",
   avatar: "p2494705863.jpg", 
-  bio: "\"记录生活，连接此刻\""
+  bio: "\"记录\""
 };
 
-const LOGO_CONFIG = { left: "record", right: "this" };
+const LOGO_CONFIG = { left: "", right: "" };
 
 // ... 图标组件 (保持不变) ...
 const MoodIcon = ({ mood, className }) => {
