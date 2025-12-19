@@ -139,7 +139,24 @@ export default function App() {
     setLoading(false);
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); };
+  // 🚪 强力登出处理
+  const handleLogout = async () => {
+    // 1. 尝试告诉服务器我们要退出了
+    try {
+        await supabase.auth.signOut();
+    } catch (error) {
+        console.error("服务器登出失败（可能是Token已失效），正在强制本地清除...", error);
+    }
+
+    // 2. 【关键】无论服务器是否成功，都强制清空本地状态
+    setSession(null);
+    
+    // 3. 强制清理浏览器的“烂摊子” (清除 Supabase 存的 Token)
+    localStorage.clear(); // 简单粗暴清空，或者你可以只清空 supabase 相关的 key
+    
+    // 4. 刷新页面，确保万无一失
+    window.location.reload();
+  };
 
   // 📌 切换置顶状态
   const togglePin = async (e, entry) => {
