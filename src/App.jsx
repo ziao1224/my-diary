@@ -216,7 +216,7 @@ export default function App() {
         content: `<p>${newEntry.content.replace(/\n/g, '<br/>')}</p>`, // 简单处理换行
         mood: newEntry.mood,
         weather: newEntry.weather,
-        location: newEntry.location || '未知地点',
+        location: newEntry.location || '南岸 重庆',
         images: images,
         // created_at 会由数据库自动生成
       }]);
