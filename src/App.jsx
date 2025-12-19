@@ -1,51 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js'; // 🟢 部署到 Vercel 时：请取消此行注释
 import { 
-  Book, 
-  Moon, 
-  Sun, 
-  Search, 
-  Calendar, 
-  User, 
-  Menu,
-  X,
-  ArrowLeft,
-  Cloud,
-  CloudRain,
-  Smile,
-  Meh,
-  Frown,
-  Heart,
-  Coffee,
-  MapPin,
-  Flame,
-  Ghost,
-  Star,
-  Snowflake,
-  Wind,
-  CloudLightning,
-  CloudFog,
-  Leaf
+  Book, Moon, Sun, Search, Calendar, User, Menu, X, ArrowLeft,
+  Cloud, CloudRain, Smile, Meh, Frown, Heart, Coffee, MapPin,
+  Flame, Ghost, Star, Snowflake, Wind, CloudLightning, CloudFog, Leaf
 } from 'lucide-react';
 
 // ==========================================
-// 👇 Supabase 配置区域 (修复报错版)
+// 👇 数据库连接配置
 // ==========================================
 
-// ⚠️ 重要提示：
-// 在本地 VS Code 开发时：
-// 1. 请确保已安装依赖：npm install @supabase/supabase-js
-// 2. 将下方的 Mock 客户端 (const supabase = { ... }) 删除或注释掉
-// 3. 取消下方“真实代码”的注释，并填入您的 URL 和 Key
+// ⚠️ 注意：为了防止在线预览报错，真实代码默认被注释了。
+// 🚀 部署到 Vercel 或在本地运行前，请执行以下 2 步：
+// 1. 【删除】下方的 “--- 🟡 Preview Mock ---” 区域代码
+// 2. 【解开】下方的 “--- 🟢 真实代码 ---” 区域注释
 
 
-import { createClient } from '@supabase/supabase-js'
-const supabaseUrl = 'https://gfknrwoxaxfdxsuryzaq.supabase.co'
-const supabaseKey = 'sb_secret_DUxvPxKi3eWmAMHCYYlVIA_s7FSvxcA'
-export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// 读取环境变量
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+
+// 初始化客户端
+const supabase = (supabaseUrl && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey) 
+  : null;
 
 
-// // --- 🟡 Preview Mock (仅供预览使用，本地建议删除) ---
-// // 这是一个假的客户端，为了让您在还没配置好后端时也能看到效果
+// // --- 🟡 Preview Mock (仅供在线预览，部署时请删除) ---
 // const supabase = {
 //   from: (table) => ({
 //     select: (columns) => ({
@@ -63,16 +45,17 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 //                   <p>买的域名不是我的名字，是一个很特别的人</p>
 //                   <p>wish</p>
 //                 `,
+//                 date: "2025-12-18",
 //                 mood: "calm",
 //                 weather: "cloudy",
-//                 created_at: "2025-12-18T12:00:00Z", // 模拟数据库时间
+//                 created_at: "2025-12-18T12:00:00Z",
 //                 location: "重庆 · 南岸区",
 //                 images: []
 //               }
 //             ],
 //             error: null
 //           });
-//         }, 800); // 模拟网络加载延迟
+//         }, 500); 
 //       })
 //     })
 //   })
@@ -80,12 +63,11 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 // --------------------------------------------------
 
 // ==========================================
-// 👇 您的个人信息配置 (已同步您的修改)
+// 👇 您的个人信息配置
 // ==========================================
 const PROFILE = {
   name: "My Recordings",
-  // 注意：本地图片 "p2494705863.jpg" 在在线预览中无法显示，
-  // 为了预览效果暂时替换为网络图片，您在本地运行时改回您的文件名即可
+  // 本地开发时会自动使用 p2494705863.jpg，预览时如果图片不存在会显示网络占位图
   avatar: "p2494705863.jpg", 
   bio: "\"记录\""
 };
@@ -95,7 +77,7 @@ const LOGO_CONFIG = {
   right: "this"     
 };
 
-// 心情图标映射
+// ... 图标组件 ...
 const MoodIcon = ({ mood, className }) => {
   switch(mood) {
     case 'happy': return <Smile className={`text-amber-500 ${className}`} />; 
@@ -110,7 +92,6 @@ const MoodIcon = ({ mood, className }) => {
   }
 };
 
-// 天气图标映射
 const WeatherIcon = ({ weather, className }) => {
   switch(weather) {
     case 'sunny': return <Sun className={`text-orange-400 ${className}`} />;           
@@ -124,33 +105,52 @@ const WeatherIcon = ({ weather, className }) => {
   }
 };
 
-export default function DiaryApp() {
+export default function App() {
   const [entries, setEntries] = useState([]); 
   const [loading, setLoading] = useState(true); 
   const [darkMode, setDarkMode] = useState(false);
   const [view, setView] = useState('home'); 
   const [activeEntry, setActiveEntry] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [errorMsg, setErrorMsg] = useState(null);
 
   // 组件加载时获取数据
   useEffect(() => {
+    // 简单的检查：如果是真实模式但没配置 key，提示错误
+    // 注意：在 Mock 模式下 supabase 始终有值，所以不会报错
+    if (!supabase) {
+      setErrorMsg("未检测到数据库配置，请在 Vercel 设置环境变量。");
+      setLoading(false);
+      return;
+    }
     fetchEntries();
   }, []);
 
   async function fetchEntries() {
     setLoading(true);
-    // 从 'entries' 表中查询所有数据
-    const { data, error } = await supabase
-      .from('entries')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      // 从 'entries' 表中查询所有数据
+      const { data, error } = await supabase
+        .from('entries')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error loading entries:', error);
-    } else {
-      // 格式化数据
+      if (error) throw error;
+
       const formattedData = (data || []).map(item => {
-        const dateObj = new Date(item.created_at); 
+        // 优先使用数据库里的 date 字段，如果没有则用 created_at 转换
+        let dateObj;
+        if (item.date) {
+            dateObj = new Date(item.date);
+        } else {
+            dateObj = new Date(item.created_at);
+        }
+
+        // 处理无效日期的情况
+        if (isNaN(dateObj.getTime())) {
+            dateObj = new Date(); 
+        }
+
         return {
           ...item,
           year: dateObj.getFullYear(),
@@ -160,8 +160,13 @@ export default function DiaryApp() {
         };
       });
       setEntries(formattedData);
+    } catch (err) {
+      console.error('Error:', err);
+      // 在 Mock 模式下通常不会报错，除非代码写错
+      setErrorMsg("无法加载日记，请检查数据库连接。");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
@@ -221,20 +226,21 @@ export default function DiaryApp() {
       {/* 主体内容 */}
       <main className="max-w-4xl mx-auto px-6 pt-28 pb-20">
         
-        {/* Loading 状态展示 */}
         {loading ? (
            <div className="flex flex-col items-center justify-center py-20 opacity-60">
              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500 mb-4"></div>
              <p>正在从云端加载记忆...</p>
            </div>
+        ) : errorMsg ? (
+            <div className="text-center py-20 text-red-500">
+              <p>{errorMsg}</p>
+            </div>
         ) : (
-           /* 页面内容切换 */
            view === 'home' ? (
             <div className="animate-fade-in-up">
               {/* 头部欢迎语 */}
               <header className="mb-16 text-center">
                 <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
-                   {/* 提示：如果 p2494705863.jpg 不在 public 目录，这里会裂图，可以暂时用网络图片测试 */}
                    <img 
                       src={PROFILE.avatar} 
                       onError={(e) => e.target.src = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"}
@@ -246,9 +252,7 @@ export default function DiaryApp() {
                 <p className={`text-sm italic ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{PROFILE.bio}</p>
               </header>
   
-              {/* 时间轴列表 */}
               <div className="relative pl-8 md:pl-0">
-                {/* 垂直线 (Desktop only) */}
                 <div className={`hidden md:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
   
                 {filteredEntries.map((entry, index) => (
@@ -303,7 +307,7 @@ export default function DiaryApp() {
               {filteredEntries.length === 0 && (
                  <div className="text-center py-20 opacity-50">
                    <Coffee className="w-12 h-12 mx-auto mb-4 stroke-1" />
-                   <p>还没有记录这段时光...</p>
+                   <p>还没有日记，去 Supabase 数据库写一篇吧...</p>
                  </div>
               )}
             </div>
@@ -351,6 +355,7 @@ export default function DiaryApp() {
                      {activeEntry.images && activeEntry.images.length > 0 && (
                         <div className="not-prose mb-10">
                           <img src={activeEntry.images[0]} alt="Memory" className="w-full rounded-xl shadow-lg" />
+                          {/* 尝试解析不同格式的日期 */}
                           <div className="text-center text-xs mt-2 opacity-50 italic">Captured on {activeEntry.date || activeEntry.created_at?.split('T')[0]}</div>
                         </div>
                      )}
@@ -368,7 +373,7 @@ export default function DiaryApp() {
         )}
       </main>
 
-      {/* 底部简易 Footer (同步您的修改) */}
+      {/* 底部简易 Footer */}
       <footer className={`py-6 text-center text-xs tracking-wider opacity-40 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
         <p>WRITTEN WITH ♥ IN 2025</p>
         <p>Begin 2025年9月22日</p>
