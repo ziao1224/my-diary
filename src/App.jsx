@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js'; // 🟢 部署到 Vercel 时：请取消此行注释
+import { createClient } from '@supabase/supabase-js'; // ✅ 这一行必须存在！
 import { 
   Book, Moon, Sun, Search, Calendar, User, Menu, X, ArrowLeft,
   Cloud, CloudRain, Smile, Meh, Frown, Heart, Coffee, MapPin,
@@ -7,67 +7,24 @@ import {
 } from 'lucide-react';
 
 // ==========================================
-// 👇 数据库连接配置
+// 👇 数据库连接配置 (生产环境)
 // ==========================================
-
-// ⚠️ 注意：为了防止在线预览报错，真实代码默认被注释了。
-// 🚀 部署到 Vercel 或在本地运行前，请执行以下 2 步：
-// 1. 【删除】下方的 “--- 🟡 Preview Mock ---” 区域代码
-// 2. 【解开】下方的 “--- 🟢 真实代码 ---” 区域注释
-
-
 
 // 读取环境变量
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
 // 初始化客户端
+// 如果环境变量没填，给个 null 防止直接报错白屏
 const supabase = (supabaseUrl && supabaseKey) 
   ? createClient(supabaseUrl, supabaseKey) 
   : null;
-
-
-// // --- 🟡 Preview Mock (仅供在线预览，部署时请删除) ---
-// const supabase = {
-//   from: (table) => ({
-//     select: (columns) => ({
-//       order: (col, opts) => new Promise((resolve) => {
-//         setTimeout(() => {
-//           resolve({
-//             data: [
-//               {
-//                 id: 1,
-//                 title: "今天是这个网站的诞生日",
-//                 content: `
-//                   <p>本来是打算去租一个云服务器，然后部署在服务器上，甚至已经买了域名</p>
-//                   <p>但是我想可能先用Github pages试试手吧</p>
-//                   <p>做这些是为了？</p>
-//                   <p>买的域名不是我的名字，是一个很特别的人</p>
-//                   <p>wish</p>
-//                 `,
-//                 date: "2025-12-18",
-//                 mood: "calm",
-//                 weather: "cloudy",
-//                 created_at: "2025-12-18T12:00:00Z",
-//                 location: "重庆 · 南岸区",
-//                 images: []
-//               }
-//             ],
-//             error: null
-//           });
-//         }, 500); 
-//       })
-//     })
-//   })
-// };
-// --------------------------------------------------
 
 // ==========================================
 // 👇 您的个人信息配置
 // ==========================================
 const PROFILE = {
   name: "My Recordings",
-  // 本地开发时会自动使用 p2494705863.jpg，预览时如果图片不存在会显示网络占位图
   avatar: "p2494705863.jpg", 
   bio: "\"记录\""
 };
@@ -116,10 +73,9 @@ export default function App() {
 
   // 组件加载时获取数据
   useEffect(() => {
-    // 简单的检查：如果是真实模式但没配置 key，提示错误
-    // 注意：在 Mock 模式下 supabase 始终有值，所以不会报错
     if (!supabase) {
-      setErrorMsg("未检测到数据库配置，请在 Vercel 设置环境变量。");
+      console.error("Supabase client not initialized. Check your environment variables.");
+      setErrorMsg("未检测到数据库配置，请在 Vercel 设置环境变量 (VITE_SUPABASE_URL, VITE_SUPABASE_KEY)。");
       setLoading(false);
       return;
     }
@@ -129,7 +85,6 @@ export default function App() {
   async function fetchEntries() {
     setLoading(true);
     try {
-      // 从 'entries' 表中查询所有数据
       const { data, error } = await supabase
         .from('entries')
         .select('*')
@@ -138,7 +93,6 @@ export default function App() {
       if (error) throw error;
 
       const formattedData = (data || []).map(item => {
-        // 优先使用数据库里的 date 字段，如果没有则用 created_at 转换
         let dateObj;
         if (item.date) {
             dateObj = new Date(item.date);
@@ -146,7 +100,6 @@ export default function App() {
             dateObj = new Date(item.created_at);
         }
 
-        // 处理无效日期的情况
         if (isNaN(dateObj.getTime())) {
             dateObj = new Date(); 
         }
@@ -161,9 +114,8 @@ export default function App() {
       });
       setEntries(formattedData);
     } catch (err) {
-      console.error('Error:', err);
-      // 在 Mock 模式下通常不会报错，除非代码写错
-      setErrorMsg("无法加载日记，请检查数据库连接。");
+      console.error('Error fetching data:', err);
+      setErrorMsg("无法加载日记，请检查数据库连接或表结构。");
     } finally {
       setLoading(false);
     }
@@ -355,7 +307,6 @@ export default function App() {
                      {activeEntry.images && activeEntry.images.length > 0 && (
                         <div className="not-prose mb-10">
                           <img src={activeEntry.images[0]} alt="Memory" className="w-full rounded-xl shadow-lg" />
-                          {/* 尝试解析不同格式的日期 */}
                           <div className="text-center text-xs mt-2 opacity-50 italic">Captured on {activeEntry.date || activeEntry.created_at?.split('T')[0]}</div>
                         </div>
                      )}
