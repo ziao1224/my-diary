@@ -276,32 +276,32 @@ export default function App() {
         </div>
       </nav>
 
-      {/* 🔐 登录弹窗 (纯用户名版) */}
+      {/* 🔐 登录弹窗 (修复版) */}
       {showLoginModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className={`w-full max-w-sm p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <h2 className="text-xl font-bold mb-6 text-center">Admin Login</h2>
             <form onSubmit={handleLogin} className="space-y-4">
+              
+              {/* 👇 这里只保留这一个输入框即可 */}
               <div className="space-y-1">
-                <label className="text-xs opacity-50 ml-1">USERNAME</label>
+                <label className="text-xs opacity-50 ml-1">USERNAME / EMAIL</label>
                 <input 
                     type="text" 
-                    placeholder="输入用户名" 
+                    placeholder="输入用户名或邮箱" 
                     value={username} 
                     onChange={e => setUsername(e.target.value)} 
                     className="w-full p-3 rounded-lg border bg-transparent" 
                 />
               </div>
-              {/* 在 return 的 JSX 部分找到 input */}
+
               <div className="space-y-1">
-                {/* 修改标签 */}
-                <label className="text-xs opacity-50 ml-1">USERNAME / EMAIL</label> 
+                <label className="text-xs opacity-50 ml-1">PASSWORD</label>
                 <input 
-                    type="text" 
-                    // 修改提示文字
-                    placeholder="输入用户名或邮箱" 
-                    value={username} 
-                    onChange={e => setUsername(e.target.value)} 
+                    type="password" 
+                    placeholder="输入密码" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
                     className="w-full p-3 rounded-lg border bg-transparent" 
                 />
               </div>
