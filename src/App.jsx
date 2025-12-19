@@ -125,17 +125,27 @@ export default function App() {
     }
   }
 
-  // 🔐 登录处理 (支持纯用户名)
+  // 🔐 登录处理 (支持 邮箱 OR 纯用户名)
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     
-    // 技巧：自动补全后缀，这样你在前台只用输 "ziao"
-    const email = `${username}@admin.com`; 
+    // 核心修改逻辑：
+    // 如果输入包含 '@'，就认为是完整邮箱，不做处理
+    // 如果不包含，就认为是用户名，自动补全后缀
+    const email = username.includes('@') 
+        ? username 
+        : `${username}@admin.com`; 
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert("登录失败：" + error.message);
-    else { setShowLoginModal(false); setUsername(''); setPassword(''); }
+    
+    if (error) {
+        alert("登录失败：" + error.message);
+    } else { 
+        setShowLoginModal(false); 
+        setUsername(''); 
+        setPassword(''); 
+    }
     setLoading(false);
   };
 
@@ -282,13 +292,16 @@ export default function App() {
                     className="w-full p-3 rounded-lg border bg-transparent" 
                 />
               </div>
+              {/* 在 return 的 JSX 部分找到 input */}
               <div className="space-y-1">
-                <label className="text-xs opacity-50 ml-1">PASSWORD</label>
+                {/* 修改标签 */}
+                <label className="text-xs opacity-50 ml-1">USERNAME / EMAIL</label> 
                 <input 
-                    type="password" 
-                    placeholder="输入密码" 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
+                    type="text" 
+                    // 修改提示文字
+                    placeholder="输入用户名或邮箱" 
+                    value={username} 
+                    onChange={e => setUsername(e.target.value)} 
                     className="w-full p-3 rounded-lg border bg-transparent" 
                 />
               </div>
