@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-
+// 🟢 部署时请取消下面这行的注释
 import { createClient } from '@supabase/supabase-js'; 
 
 import { 
   Book, Moon, Sun, Search, Calendar, User, Menu, X, ArrowLeft,
   Cloud, CloudRain, Smile, Meh, Frown, Heart, Coffee, MapPin,
   Flame, Ghost, Star, Snowflake, Wind, CloudLightning, CloudFog, Leaf,
-  LogIn, LogOut, Plus, Image as ImageIcon, Loader2
+  LogIn, LogOut, Plus, Image as ImageIcon, Loader2, Pin
 } from 'lucide-react';
 
 // ==========================================
@@ -19,44 +19,18 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 
-// --- 🟡 Preview Mock (仅供在线预览，部署时请删除整个 Mock 块) ---
-// ⚠️ 注意：Mock 模式下无法真正登录和上传图片
-// const supabase = {
-//   auth: {
-//     getSession: () => Promise.resolve({ data: { session: null } }),
-//     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-//     signInWithPassword: () => Promise.resolve({ error: { message: "预览模式无法登录，请在本地配置 Supabase" } }),
-//     signOut: () => Promise.resolve({})
-//   },
-//   from: () => ({
-//     select: () => ({
-//       order: () => Promise.resolve({
-//         data: [{
-//           id: 1,
-//           title: "预览模式数据",
-//           content: "<p>这是模拟数据。请在本地配置真实数据库以启用登录和写入功能。</p>",
-//           mood: "happy",
-//           weather: "sunny",
-//           created_at: new Date().toISOString(),
-//           location: "Virtual Space",
-//           images: []
-//         }],
-//         error: null
-//       })
-//     })
-//   })
-// };
+
 // --------------------------------------------------
 
 const PROFILE = {
-  name: "有一些瞬间，有一些想法在脑子里回旋",
+  name: "记录",
   avatar: "p2494705863.jpg", 
-  bio: "\"记录\""
+  bio: "欢迎你来，它在这里已经等你很久"
 };
 
-const LOGO_CONFIG = { left: "", right: "" };
+const LOGO_CONFIG = { left: "record", right: "this" };
 
-// ... 图标组件 (保持不变) ...
+// ... 图标组件 ...
 const MoodIcon = ({ mood, className }) => {
   switch(mood) {
     case 'happy': return <Smile className={`text-amber-500 ${className}`} />; 
@@ -93,10 +67,12 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   
   // 🔐 登录与交互状态
-  const [session, setSession] = useState(null); // 当前登录用户
+  const [session, setSession] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showWriteModal, setShowWriteModal] = useState(false);
-  const [email, setEmail] = useState('');
+  
+  // 修改：这里使用 username 而不是 email
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
   // 📝 写作表单状态
@@ -104,47 +80,40 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
 
-  // 初始化：获取用户 session 和日记数据
+  // 初始化
   useEffect(() => {
     if (!supabase) return;
-
-    // 1. 获取当前会话
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
-
-    // 2. 监听登录状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
-    // 3. 获取日记
     fetchEntries();
-
     return () => subscription.unsubscribe();
   }, []);
 
   async function fetchEntries() {
     setLoading(true);
     try {
+      // 📌 核心修改：先按 is_top 降序(true在前)，再按时间降序
       const { data, error } = await supabase
         .from('entries')
         .select('*')
+        .order('is_top', { ascending: false }) 
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // 🕒 日期处理核心逻辑：直接使用 created_at
       const formattedData = (data || []).map(item => {
-        const dateObj = new Date(item.created_at); // UTC 时间
+        const dateObj = new Date(item.created_at);
         return {
           ...item,
-          // 格式化为本地显示的年、月、日
           year: dateObj.getFullYear(),
           month: String(dateObj.getMonth() + 1).padStart(2, '0'),
           day: String(dateObj.getDate()).padStart(2, '0'),
-          weekday: dateObj.toLocaleDateString('zh-CN', { weekday: 'short' }), // "周一"
-          time: dateObj.toLocaleTimeString('zh-CN', { hour12: false }), // "14:30:05" (新增精准时间)
+          weekday: dateObj.toLocaleDateString('zh-CN', { weekday: 'short' }),
+          time: dateObj.toLocaleTimeString('zh-CN', { hour12: false }), 
           images: item.images || [] 
         };
       });
@@ -156,82 +125,84 @@ export default function App() {
     }
   }
 
-  // 🔐 登录处理
+  // 🔐 登录处理 (支持纯用户名)
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    
+    // 技巧：自动补全后缀，这样你在前台只用输 "ziao"
+    const email = `${username}@admin.com`; 
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
-    else {
-      setShowLoginModal(false);
-      setEmail('');
-      setPassword('');
-    }
+    if (error) alert("登录失败：" + error.message);
+    else { setShowLoginModal(false); setUsername(''); setPassword(''); }
     setLoading(false);
   };
 
-  // 🚪 登出处理
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = async () => { await supabase.auth.signOut(); };
+
+  // 📌 切换置顶状态
+  const togglePin = async (e, entry) => {
+    e.stopPropagation(); // 防止触发点击进入详情
+    if (!session) return;
+
+    const newStatus = !entry.is_top;
+    
+    // 更新本地状态（为了UI即时反馈）
+    setEntries(entries.map(item => 
+        item.id === entry.id ? { ...item, is_top: newStatus } : item
+    ));
+
+    // 更新数据库
+    const { error } = await supabase
+        .from('entries')
+        .update({ is_top: newStatus })
+        .eq('id', entry.id);
+
+    if (error) {
+        alert("操作失败");
+        fetchEntries(); // 如果失败，回滚数据
+    } else {
+        fetchEntries(); // 如果成功，重新排序
+    }
   };
 
-  // 📤 图片上传处理
+  // 图片上传 (保持不变)
   const handleImageUpload = async (event) => {
     try {
       setUploading(true);
       const file = event.target.files[0];
       if (!file) return;
-
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
-
-      // 上传到 'diary_images' 桶
-      const { error: uploadError } = await supabase.storage
-        .from('diary_images')
-        .upload(filePath, file);
-
+      const { error: uploadError } = await supabase.storage.from('diary_images').upload(filePath, file);
       if (uploadError) throw uploadError;
-
-      // 获取公开链接
       const { data } = supabase.storage.from('diary_images').getPublicUrl(filePath);
       setUploadUrl(data.publicUrl);
-    } catch (error) {
-      alert('上传失败: ' + error.message);
-    } finally {
-      setUploading(false);
-    }
+    } catch (error) { alert('上传失败: ' + error.message); } finally { setUploading(false); }
   };
 
-  // 💾 保存日记
+  // 提交日记
   const handleSubmitEntry = async () => {
     if (!newEntry.title || !newEntry.content) return alert("请至少填写标题和内容");
-    
     setLoading(true);
     try {
       const images = uploadUrl ? [uploadUrl] : [];
-      
       const { error } = await supabase.from('entries').insert([{
         title: newEntry.title,
-        content: `<p>${newEntry.content.replace(/\n/g, '<br/>')}</p>`, // 简单处理换行
+        content: `<p>${newEntry.content.replace(/\n/g, '<br/>')}</p>`,
         mood: newEntry.mood,
         weather: newEntry.weather,
-        location: newEntry.location || '南岸 重庆',
+        location: newEntry.location || '未知地点',
         images: images,
-        // created_at 会由数据库自动生成
       }]);
-
       if (error) throw error;
-
       setShowWriteModal(false);
       setNewEntry({ title: '', content: '', mood: 'calm', weather: 'sunny', location: '' });
       setUploadUrl('');
-      fetchEntries(); // 重新加载列表
-    } catch (error) {
-      alert('发布失败: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
+      fetchEntries();
+    } catch (error) { alert('发布失败: ' + error.message); } finally { setLoading(false); }
   };
 
   const filteredEntries = entries.filter(entry => 
@@ -257,7 +228,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 登录/登出/写日记 按钮 */}
             {session ? (
               <>
                 <button onClick={() => setShowWriteModal(true)} className="p-2 rounded-full hover:bg-rose-100 text-rose-500 transition-colors" title="写日记">
@@ -272,7 +242,6 @@ export default function App() {
                 <LogIn className="h-5 w-5" />
               </button>
             )}
-            
             <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-slate-800 text-yellow-500' : 'hover:bg-rose-100 text-slate-600'}`}>
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
@@ -280,15 +249,33 @@ export default function App() {
         </div>
       </nav>
 
-      {/* 🔐 登录弹窗 */}
+      {/* 🔐 登录弹窗 (纯用户名版) */}
       {showLoginModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className={`w-full max-w-sm p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <h2 className="text-xl font-bold mb-6 text-center">Admin Login</h2>
             <form onSubmit={handleLogin} className="space-y-4">
-              <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 rounded-lg border bg-transparent" />
-              <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 rounded-lg border bg-transparent" />
-              <div className="flex gap-2 pt-2">
+              <div className="space-y-1">
+                <label className="text-xs opacity-50 ml-1">USERNAME</label>
+                <input 
+                    type="text" 
+                    placeholder="输入用户名" 
+                    value={username} 
+                    onChange={e => setUsername(e.target.value)} 
+                    className="w-full p-3 rounded-lg border bg-transparent" 
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs opacity-50 ml-1">PASSWORD</label>
+                <input 
+                    type="password" 
+                    placeholder="输入密码" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    className="w-full p-3 rounded-lg border bg-transparent" 
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
                 <button type="button" onClick={() => setShowLoginModal(false)} className="flex-1 p-2 rounded-lg border opacity-70">Cancel</button>
                 <button type="submit" disabled={loading} className="flex-1 p-2 rounded-lg bg-rose-500 text-white font-bold">{loading ? '...' : 'Login'}</button>
               </div>
@@ -305,16 +292,8 @@ export default function App() {
               <h2 className="text-xl font-bold">New Memory</h2>
               <button onClick={() => setShowWriteModal(false)}><X className="h-5 w-5" /></button>
             </div>
-            
             <div className="space-y-4">
-              <input 
-                type="text" 
-                placeholder="Title (e.g. 今天的日落)" 
-                value={newEntry.title}
-                onChange={e => setNewEntry({...newEntry, title: e.target.value})}
-                className="w-full p-3 rounded-xl border bg-transparent text-lg font-bold"
-              />
-              
+              <input type="text" placeholder="Title" value={newEntry.title} onChange={e => setNewEntry({...newEntry, title: e.target.value})} className="w-full p-3 rounded-xl border bg-transparent text-lg font-bold" />
               <div className="flex gap-2">
                 <select value={newEntry.mood} onChange={e => setNewEntry({...newEntry, mood: e.target.value})} className="flex-1 p-2 rounded-lg border bg-transparent text-sm">
                   <option value="calm">Calm 🍃</option>
@@ -328,50 +307,13 @@ export default function App() {
                   <option value="rain">Rain 🌧️</option>
                 </select>
               </div>
-
-              <textarea 
-                placeholder="写下此刻的想法..." 
-                value={newEntry.content}
-                onChange={e => setNewEntry({...newEntry, content: e.target.value})}
-                className="w-full p-3 rounded-xl border bg-transparent min-h-[150px]"
-              />
-
-              <input 
-                type="text" 
-                placeholder="Location (optional)" 
-                value={newEntry.location}
-                onChange={e => setNewEntry({...newEntry, location: e.target.value})}
-                className="w-full p-2 rounded-lg border bg-transparent text-sm"
-              />
-
-              {/* 图片上传区域 */}
+              <textarea placeholder="写下此刻的想法..." value={newEntry.content} onChange={e => setNewEntry({...newEntry, content: e.target.value})} className="w-full p-3 rounded-xl border bg-transparent min-h-[150px]" />
+              <input type="text" placeholder="Location (optional)" value={newEntry.location} onChange={e => setNewEntry({...newEntry, location: e.target.value})} className="w-full p-2 rounded-lg border bg-transparent text-sm" />
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center relative">
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  disabled={uploading}
-                />
-                {uploading ? (
-                  <div className="flex items-center justify-center gap-2 text-rose-500"><Loader2 className="animate-spin h-5 w-5"/> Uploading...</div>
-                ) : uploadUrl ? (
-                  <img src={uploadUrl} alt="Preview" className="h-32 mx-auto rounded-lg object-cover" />
-                ) : (
-                  <div className="text-gray-400 flex flex-col items-center gap-1">
-                    <ImageIcon className="h-6 w-6" />
-                    <span className="text-xs">点击上传图片</span>
-                  </div>
-                )}
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={uploading} />
+                {uploading ? <div className="flex items-center justify-center gap-2 text-rose-500"><Loader2 className="animate-spin h-5 w-5"/> Uploading...</div> : uploadUrl ? <img src={uploadUrl} alt="Preview" className="h-32 mx-auto rounded-lg object-cover" /> : <div className="text-gray-400 flex flex-col items-center gap-1"><ImageIcon className="h-6 w-6" /><span className="text-xs">点击上传图片</span></div>}
               </div>
-
-              <button 
-                onClick={handleSubmitEntry}
-                disabled={loading || uploading}
-                className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-rose-200"
-              >
-                {loading ? 'Saving...' : 'Record Memory'}
-              </button>
+              <button onClick={handleSubmitEntry} disabled={loading || uploading} className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-rose-200">{loading ? 'Saving...' : 'Record Memory'}</button>
             </div>
           </div>
         </div>
@@ -387,32 +329,23 @@ export default function App() {
         ) : (
            view === 'home' ? (
             <div className="animate-fade-in-up">
-              {/* Header */}
               <header className="mb-16 text-center">
                 <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
-                   <img 
-                      src={PROFILE.avatar} 
-                      onError={(e) => e.target.src = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"}
-                      alt="Me" 
-                      className="w-full h-full object-cover" 
-                   />
+                   <img src={PROFILE.avatar} onError={(e) => e.target.src = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"} alt="Me" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-2xl font-bold mb-2">{PROFILE.name}</h1>
                 <p className={`text-sm italic ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{PROFILE.bio}</p>
               </header>
   
-              {/* Timeline */}
               <div className="relative pl-8 md:pl-0">
                 <div className={`hidden md:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-  
                 {entries.map((entry, index) => (
                   <div key={entry.id || index} className={`group relative mb-16 md:flex items-center justify-between ${index % 2 === 0 ? 'md:flex-row-reverse' : ''}`}>
-                    {/* Dots & Lines */}
                     <div className={`hidden md:flex absolute left-1/2 top-8 -translate-x-1/2 w-4 h-4 rounded-full border-4 z-10 transition-colors duration-300 ${darkMode ? 'bg-slate-900 border-rose-900 group-hover:border-rose-500' : 'bg-[#f8f5f2] border-rose-200 group-hover:border-rose-400'}`}></div>
                     <div className={`md:hidden absolute left-0 top-8 w-3 h-3 rounded-full border-2 -translate-x-1.5 ${darkMode ? 'bg-slate-900 border-rose-500' : 'bg-[#f8f5f2] border-rose-400'}`}></div>
                     <div className={`md:hidden absolute left-0 top-11 bottom-[-64px] w-px -translate-x-px ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-  
-                    {/* Date Block (使用 created_at 转换后的日期) */}
+                    
+                    {/* 日期块 */}
                     <div className={`hidden md:block w-[45%] text-center ${index % 2 === 0 ? 'text-left pl-8' : 'text-right pr-8'}`}>
                       <div className={`text-5xl font-bold opacity-10 font-sans tracking-tighter ${darkMode ? 'text-white' : 'text-black'}`}>{entry.year}</div>
                       <div className={`text-sm font-medium uppercase tracking-widest ${darkMode ? 'text-rose-400' : 'text-rose-500'}`}>
@@ -421,10 +354,21 @@ export default function App() {
                       <div className={`text-xs font-mono mt-1 opacity-60 ${darkMode ? 'text-rose-300' : 'text-rose-400'}`}>{entry.time}</div>
                     </div>
   
-                    {/* Entry Card */}
+                    {/* 内容卡片 */}
                     <div onClick={() => { setActiveEntry(entry); setView('entry'); window.scrollTo(0,0); }} className={`w-full md:w-[45%] cursor-pointer transition-transform duration-300 hover:-translate-y-1`}>
-                      <article className={`p-6 rounded-2xl shadow-sm border relative overflow-hidden ${darkMode ? 'bg-[#25262b] border-slate-800 hover:border-slate-700' : 'bg-white border-white hover:shadow-md'}`}>
-                        {/* Mobile Date */}
+                      <article className={`p-6 rounded-2xl shadow-sm border relative overflow-hidden ${darkMode ? 'bg-[#25262b] border-slate-800 hover:border-slate-700' : 'bg-white border-white hover:shadow-md'} ${entry.is_top ? 'ring-2 ring-rose-400/50' : ''}`}>
+                        
+                        {/* 📌 置顶图标 (只在置顶时或登录后显示) */}
+                        { (entry.is_top || session) && (
+                            <div 
+                                onClick={(e) => togglePin(e, entry)}
+                                className={`absolute top-4 right-4 z-20 p-2 rounded-full transition-all ${entry.is_top ? 'bg-rose-500 text-white' : 'bg-transparent text-gray-300 hover:bg-gray-100'}`}
+                                title={entry.is_top ? "取消置顶" : "置顶"}
+                            >
+                                <Pin className={`h-4 w-4 ${entry.is_top ? 'fill-current' : ''}`} />
+                            </div>
+                        )}
+
                         <div className="md:hidden mb-3 text-rose-500">
                           <div className="flex items-baseline gap-2">
                             <span className="text-xl font-bold">{entry.day}</span>
@@ -432,13 +376,7 @@ export default function App() {
                           </div>
                           <div className="text-xs opacity-60 font-mono">{entry.time} {entry.weekday}</div>
                         </div>
-                        {/* Images */}
-                        {entry.images && entry.images.length > 0 && (
-                          <div className="h-40 w-full mb-4 rounded-lg overflow-hidden">
-                             <img src={entry.images[0]} className="w-full h-full object-cover" alt="Memory" />
-                          </div>
-                        )}
-                        {/* Meta */}
+                        {entry.images && entry.images.length > 0 && <div className="h-40 w-full mb-4 rounded-lg overflow-hidden"><img src={entry.images[0]} className="w-full h-full object-cover" alt="Memory" /></div>}
                         <div className="flex items-center gap-3 mb-3">
                           <MoodIcon mood={entry.mood} className="w-5 h-5" />
                           <WeatherIcon weather={entry.weather} className="w-5 h-5" />
