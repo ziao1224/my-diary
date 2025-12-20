@@ -130,15 +130,33 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
     
-    // 核心修改逻辑：
-    // 如果输入包含 '@'，就认为是完整邮箱，不做处理
-    // 如果不包含，就认为是用户名，自动补全后缀
+    // 1. 准备邮箱逻辑
     const email = username.includes('@') 
         ? username 
         : `${username}@admin.com`; 
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // 2. 执行登录请求
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
+    // =========================================================
+    // 👇【新增代码】记录登录尝试（静默执行，不影响用户体验）
+    // =========================================================
+    try {
+        await supabase.from('login_logs').insert([
+            {
+                input_username: username,     // 用户填写的账号
+                attempt_email: email,         // 实际验证的邮箱
+                is_success: !error,           // 是否成功
+                error_message: error ? error.message : null, // 失败原因
+                user_agent: navigator.userAgent // 记录对方是用手机还是电脑
+            }
+        ]);
+    } catch (logError) {
+        console.error("日志记录失败", logError); // 仅仅在控制台报错，不打断登录流程
+    }
+    // =========================================================
+
+    // 3. 处理登录结果
     if (error) {
         alert("登录失败：" + error.message);
     } else { 
