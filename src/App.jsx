@@ -92,6 +92,11 @@ export default function App() {
     fetchEntries();
     return () => subscription.unsubscribe();
   }, []);
+  // 👇【新增】监听登录状态变化
+  // 只要 session 变了（无论是登录还是退出），就自动重新拉取日记
+  useEffect(() => {
+    fetchEntries();
+  }, [session]);
 
   async function fetchEntries() {
     setLoading(true);
