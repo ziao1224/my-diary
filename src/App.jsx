@@ -76,7 +76,15 @@ export default function App() {
   const [password, setPassword] = useState('');
   
   // 📝 写作表单状态
-  const [newEntry, setNewEntry] = useState({ title: '', content: '', mood: 'calm', weather: 'sunny', location: '' });
+  // 👇 修改后
+const [newEntry, setNewEntry] = useState({ 
+  title: '', 
+  content: '', 
+  mood: 'calm', 
+  weather: 'sunny', 
+  location: '',
+  is_public: false // 默认为私密
+});
   const [uploading, setUploading] = useState(false);
   const [uploadUrl, setUploadUrl] = useState('');
 
@@ -135,15 +143,33 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
     
-    // 核心修改逻辑：
-    // 如果输入包含 '@'，就认为是完整邮箱，不做处理
-    // 如果不包含，就认为是用户名，自动补全后缀
+    // 1. 准备邮箱逻辑
     const email = username.includes('@') 
         ? username 
         : `${username}@admin.com`; 
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // 2. 执行登录请求
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
+    // =========================================================
+    // 👇【新增代码】记录登录尝试（静默执行，不影响用户体验）
+    // =========================================================
+    try {
+        await supabase.from('login_logs').insert([
+            {
+                input_username: username,     // 用户填写的账号
+                attempt_email: email,         // 实际验证的邮箱
+                is_success: !error,           // 是否成功
+                error_message: error ? error.message : null, // 失败原因
+                user_agent: navigator.userAgent // 记录对方是用手机还是电脑
+            }
+        ]);
+    } catch (logError) {
+        console.error("日志记录失败", logError); // 仅仅在控制台报错，不打断登录流程
+    }
+    // =========================================================
+
+    // 3. 处理登录结果
     if (error) {
         alert("登录失败：" + error.message);
     } else { 
@@ -228,6 +254,7 @@ export default function App() {
         weather: newEntry.weather,
         location: newEntry.location || '未知地点',
         images: images,
+        is_public: newEntry.is_public, // 👈 这一行是新增的
       }]);
       if (error) throw error;
       setShowWriteModal(false);
@@ -344,6 +371,23 @@ export default function App() {
               </div>
               <textarea placeholder="写下此刻的想法..." value={newEntry.content} onChange={e => setNewEntry({...newEntry, content: e.target.value})} className="w-full p-3 rounded-xl border bg-transparent min-h-[150px]" />
               <input type="text" placeholder="Location (optional)" value={newEntry.location} onChange={e => setNewEntry({...newEntry, location: e.target.value})} className="w-full p-2 rounded-lg border bg-transparent text-sm" />
+              {/* 在 Location 输入框下方添加这个 div */}
+              <div className="flex items-center gap-2 p-2">
+                <input 
+                  type="checkbox" 
+                  id="public-switch"
+                  checked={newEntry.is_public}
+                  onChange={e => setNewEntry({...newEntry, is_public: e.target.checked})}
+                  className="w-5 h-5 accent-rose-500 rounded focus:ring-rose-500" 
+                />
+                <label htmlFor="public-switch" className="text-sm font-medium cursor-pointer select-none flex items-center gap-1">
+                  {newEntry.is_public ? (
+                    <span className="text-rose-500 flex items-center gap-1">🌐 公开发布 (所有人可见)</span>
+                  ) : (
+                    <span className="text-slate-400 flex items-center gap-1">🔒 仅自己可见</span>
+                  )}
+                </label>
+              </div>
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center relative">
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" disabled={uploading} />
                 {uploading ? <div className="flex items-center justify-center gap-2 text-rose-500"><Loader2 className="animate-spin h-5 w-5"/> Uploading...</div> : uploadUrl ? <img src={uploadUrl} alt="Preview" className="h-32 mx-auto rounded-lg object-cover" /> : <div className="text-gray-400 flex flex-col items-center gap-1"><ImageIcon className="h-6 w-6" /><span className="text-xs">点击上传图片</span></div>}
@@ -392,7 +436,15 @@ export default function App() {
                     {/* 内容卡片 */}
                     <div onClick={() => { setActiveEntry(entry); setView('entry'); window.scrollTo(0,0); }} className={`w-full md:w-[45%] cursor-pointer transition-transform duration-300 hover:-translate-y-1`}>
                       <article className={`p-6 rounded-2xl shadow-sm border relative overflow-hidden ${darkMode ? 'bg-[#25262b] border-slate-800 hover:border-slate-700' : 'bg-white border-white hover:shadow-md'} ${entry.is_top ? 'ring-2 ring-rose-400/50' : ''}`}>
-                        
+                      {/* 👇 2. 在这里插入你的代码 (放在 article 紧接着的第一行) */}
+                      {/* 公开/私密 状态标签 (左上角) */}
+                      <div className="absolute top-4 left-4 z-10">
+                          {entry.is_public ? (
+                              <span title="公开" className="text-[10px] font-bold tracking-wider bg-green-100 text-green-600 px-2 py-1 rounded-full uppercase">Public</span>
+                          ) : (
+                              <span title="私密" className="text-[10px] font-bold tracking-wider bg-slate-100 text-slate-500 px-2 py-1 rounded-full uppercase">Private</span>
+                          )}
+                      </div>  
                         {/* 📌 置顶图标 (只在置顶时或登录后显示) */}
                         { (entry.is_top || session) && (
                             <div 
